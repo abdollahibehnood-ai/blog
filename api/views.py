@@ -46,3 +46,14 @@ class PostLikeView(generics.CreateAPIView):
             )
 
         serializer.save(user=user, post=post)
+
+
+class PostUnlikeView(generics.DestroyAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        post = get_object_or_404(Post, pk=self.kwargs.get("pk"))
+        user = self.request.user
+        return get_object_or_404(Like, post=post, user=user)
