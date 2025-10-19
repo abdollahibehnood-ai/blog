@@ -12,4 +12,5 @@ urlpatterns = [
     path("token/refresh", TokenRefreshView.as_view()),
     path("posts/", views.PostListView.as_view()),
     path("posts/<int:pk>/", views.PostDetailView.as_view()),
+    path("posts/<int:pk>/like/", views.PostLikeView.as_view()),
 ]

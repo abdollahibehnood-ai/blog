@@ -1,9 +1,11 @@
 from rest_framework import generics
 from rest_framework import permissions
+from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 
-from .models import Post
-from .serializers import PostSerializer, UserSerializer
+from .models import Post, Like
+from .serializers import PostSerializer, UserSerializer, LikeSerializer
 from .permissions import IsOwnerOrReadOnly
 
 
@@ -19,10 +21,28 @@ class PostListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        return serializer.save(author=self.request.user)
+        serializer.save(author=self.request.user)
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+
+class PostLikeView(generics.CreateAPIView):
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, pk=self.kwargs.get("pk"))
+        user = self.request.user
+
+        like_exists = Like.objects.filter(post=post, user=user).exists()
+        if like_exists:
+            raise serializers.ValidationError(
+                f"user {user} has already liked the post {post}"
+            )
+
+        serializer.save(user=user, post=post)
