@@ -4,9 +4,15 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
-from .models import Post, Like
-from .serializers import PostSerializer, UserSerializer, LikeSerializer
+from .models import Post, Like, Comment
+from .serializers import (
+    PostSerializer,
+    UserSerializer,
+    LikeSerializer,
+    CommentSerializer,
+)
 from .permissions import IsOwnerOrReadOnly
+from .pagination import PostPagination, CommentPagination
 
 
 class UserCreateView(generics.CreateAPIView):
@@ -19,6 +25,7 @@ class PostListView(generics.ListCreateAPIView):
     queryset = Post.objects.all().order_by("-created_at")
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = PostPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -57,3 +64,15 @@ class PostUnlikeView(generics.DestroyAPIView):
         post = get_object_or_404(Post, pk=self.kwargs.get("pk"))
         user = self.request.user
         return get_object_or_404(Like, post=post, user=user)
+
+
+class PostCommentsView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = CommentPagination
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        post = get_object_or_404(Post, pk=self.kwargs.get("pk"))
+        serializer.save(user=user, post=post)
