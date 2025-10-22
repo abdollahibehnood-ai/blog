@@ -4,14 +4,15 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
-from .models import Post, Like, Comment
+from .models import Post, Like, Comment, Profile
 from .serializers import (
     PostSerializer,
     UserSerializer,
     LikeSerializer,
     CommentSerializer,
+    ProfileSerializer,
 )
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly, IsProfileOwnerOrReadOnly
 from .pagination import PostPagination, CommentPagination
 
 
@@ -19,6 +20,16 @@ class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    queryset = Profile.objects.select_related("user").all()
+    serializer_class = ProfileSerializer
+    permission_classes = [IsProfileOwnerOrReadOnly]
+
+    def get_object(self):
+        user_id = self.kwargs.get("pk")
+        return get_object_or_404(Profile, user=user_id)
 
 
 class PostListView(generics.ListCreateAPIView):
